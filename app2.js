@@ -53,11 +53,38 @@ function buildLibraryReport(data) {
     // map the byReader
     function byReaderMapper(readerList) {
         const {id, profile} = readerList
+
+        const loanRows = buildLoanRows(data)
+
+        // filter the same readerIds in loan so we make a list of same readerId
+        function filterReaderOverdue(loanItem) {
+            return loanItem.readerId === id
+        }
+
+        const readerLoans = loans.filter(filterReaderOverdue)
+
+        function findOutputRow(loanItem) {
+            function matchLoanId(outputItem) {
+                return outputItem.loanId === loanItem.id
+            }
+
+            return loanRows.find(matchLoanId)
+        }
+
+        const readerOutputRows = readerLoans.map(findOutputRow)
+
+
+        // reduce the whole overdue days of each reader
+        //  3. status === "overdue" -> overdueDays = elapsedDays - loanDays
+        function totalOverdueDays(total, secondVal) {
+            return total + secondVal.overdueDays
+        }
+
         return {
             readerId: id,
             readerLabel: profile.displayName,
             activeCount: activeCount,
-            overdueCount: firstAppOutput,
+            overdueCount: readerOutputRows.reduce(totalOverdueDays, 0),
             totalOverdueDays: totalOverdueDays,
         }
     }
